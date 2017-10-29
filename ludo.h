@@ -607,147 +607,147 @@ void moveCounter( Player* player, int counterSerial )
 {
     int color = player->color;
     int moves = player->movesToBeMade[(player->presentNoOfMove)--];
-    int targetMarker = player->markers[counterSerial];
+    int *targetMarker = &(player->markers[counterSerial]);
     switch( color )
     {
     case GREEN:
-        if( targetMarker<=72)
+        if( *targetMarker<=72)
         {
-            if( targetMarker>=46 && targetMarker<=51 && targetMarker+moves>51 )
+            if( *targetMarker>=46 && *targetMarker<=51 && *targetMarker+moves>51 )
             {
-                if( targetMarker+moves!=57 ) targetMarker = targetMarker+moves+1;
+                if( *targetMarker+moves!=57 ) *targetMarker = *targetMarker+moves+1;
                 else
                 {
-                    targetMarker=73;
+                    *targetMarker=73;
                     player->countersAtEnd++;
                 }
             }
-            else if( targetMarker>=53 && targetMarker<=57 )
+            else if( *targetMarker>=53 && *targetMarker<=57 )
             {
-                if( targetMarker+moves==58 )
+                if( *targetMarker+moves==58 )
                 {
-                    targetMarker=73;
+                    *targetMarker=73;
                     player->countersAtEnd++;
                 }
-                else if( targetMarker+moves<58 )
+                else if( *targetMarker+moves<58 )
                 {
-                    targetMarker+=moves;
+                    *targetMarker+=moves;
                 }
             }
             else
             {
-                targetMarker+=moves;
+                *targetMarker+=moves;
             }
         }
         break;
 
     case RED:
-        if( targetMarker<=72 )
+        if( *targetMarker<=72 )
         {
-            if( targetMarker>46 && targetMarker<=52 && targetMarker+moves>52 )
+            if( *targetMarker>46 && *targetMarker<=52 && *targetMarker+moves>52 )
             {
-                targetMarker = targetMarker+moves-52;
+                *targetMarker = *targetMarker+moves-52;
             }
-            else if ( targetMarker>6 && targetMarker<=12 && targetMarker+moves>12 )
+            else if ( *targetMarker>6 && *targetMarker<=12 && *targetMarker+moves>12 )
             {
-                if( targetMarker+moves!=18 ) targetMarker = targetMarker+moves+45;
+                if( *targetMarker+moves!=18 ) *targetMarker = *targetMarker+moves+45;
                 else
                 {
-                    targetMarker==74;
+                    *targetMarker==74;
                     player->countersAtEnd++;
                 }
             }
-            else if ( targetMarker>=58 && targetMarker<=62 )
+            else if ( *targetMarker>=58 && *targetMarker<=62 )
             {
-                if( targetMarker+moves==63 )
+                if( *targetMarker+moves==63 )
                 {
-                    targetMarker=74;
+                    *targetMarker=74;
                     player->countersAtEnd++;
                 }
-                else if ( targetMarker+moves<63 )
+                else if ( *targetMarker+moves<63 )
                 {
-                    targetMarker+=moves;
+                    *targetMarker+=moves;
                 }
             }
             else
             {
-                targetMarker+=moves;
+                *targetMarker+=moves;
             }
         }
         break;
 
     case BLUE:
-        if( targetMarker<=72 )
+        if( *targetMarker<=72 )
         {
-            if( targetMarker>46 && targetMarker<=52 && targetMarker+moves>52 )
+            if( *targetMarker>46 && *targetMarker<=52 && *targetMarker+moves>52 )
             {
-                targetMarker = targetMarker+moves-52;
+                *targetMarker = *targetMarker+moves-52;
             }
-            else if ( targetMarker>19 && targetMarker<=25 && targetMarker+moves>25 )
+            else if ( *targetMarker>19 && *targetMarker<=25 && *targetMarker+moves>25 )
             {
-                if( targetMarker+moves!=31 ) targetMarker = targetMarker+moves+37;
+                if( *targetMarker+moves!=31 ) *targetMarker = *targetMarker+moves+37;
                 else
                 {
-                    targetMarker=75;
+                    *targetMarker=75;
                     player->countersAtEnd++;
                 }
             }
-            else if ( targetMarker>=63 && targetMarker<=67 )
+            else if ( *targetMarker>=63 && *targetMarker<=67 )
             {
-                if( targetMarker+moves==68 )
+                if( *targetMarker+moves==68 )
                 {
-                    targetMarker=75;
+                    *targetMarker=75;
                     player->countersAtEnd++;
                 }
-                else if ( targetMarker+moves<68 )
+                else if ( *targetMarker+moves<68 )
                 {
-                    targetMarker+=moves;
+                    *targetMarker+=moves;
                 }
             }
             else
             {
-                targetMarker+=moves;
+                *targetMarker+=moves;
             }
         }
         break;
 
     case YELLOW:
-        if( targetMarker<=72 )
+        if( *targetMarker<=72 )
         {
-            if( targetMarker>46 && targetMarker<=52 && targetMarker+moves>52 )
+            if( *targetMarker>46 && *targetMarker<=52 && *targetMarker+moves>52 )
             {
-                targetMarker = targetMarker+moves-52;
+                *targetMarker = *targetMarker+moves-52;
             }
-            else if ( targetMarker>32 && targetMarker<=38 && targetMarker+moves>38 )
+            else if ( *targetMarker>32 && *targetMarker<=38 && *targetMarker+moves>38 )
             {
-                if( targetMarker+moves!=44 ) targetMarker = targetMarker+moves+29;
+                if( *targetMarker+moves!=44 ) *targetMarker = *targetMarker+moves+29;
                 else
                 {
-                    targetMarker=76;
+                    *targetMarker=76;
                     player->countersAtEnd++;
                 }
             }
-            else if ( targetMarker>=68 && targetMarker<=72 )
+            else if ( *targetMarker>=68 && *targetMarker<=72 )
             {
-                if( targetMarker+moves==73 )
+                if( *targetMarker+moves==73 )
                 {
-                    targetMarker=76;
+                    *targetMarker=76;
                     player->countersAtEnd++;
                 }
-                else if ( targetMarker+moves<73 )
+                else if ( *targetMarker+moves<73 )
                 {
-                    targetMarker+=moves;
+                    *targetMarker+=moves;
                 }
             }
             else
             {
-                targetMarker+=moves;
+                *targetMarker+=moves;
             }
         }
         break;
     }
 
-    eatCounter( targetMarker, player );
+    eatCounter( *targetMarker, player );
 }
 
 void moveCounterFromHomeToPlay( Player* player, int location )
