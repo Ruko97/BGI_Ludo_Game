@@ -19,12 +19,13 @@ int main()
 
 #if TESTING
     int roll;
-    int i;
+    int i, j=0;
     int active=1;
-    players[3].markers[0]=40;
-    players[2].markers[0]=27;
-    players[1].markers[0]=14;
-    players[0].markers[0]=1;
+
+    for( i=0; i<4; i++ )
+    moveCounterFromHomeToPlay(&players[i], 78+4*i);
+
+
 #endif // TESTING
 
     //printf("%d\n", DARKYELLOW);
@@ -46,21 +47,23 @@ int main()
         //drawOneMarker(location, color);
 
         location++;
+        j++;
         for( i=0; i<4; i++ )
         {
             rollDice( &players[i] );
-            moveCounter( &players[i], 0 );
+            moveCounter( &players[i], 1 );
         }
 
-        delay(1000);
-
+        delay(500);
+        //if( j==6 ) putBackToStart(&players[3], 1);
+        /*
         getmouseclick(WM_LBUTTONDOWN, x, y);
         cout << "The mouse was clicked at: ";
 
         cout << "x=" << x;
 
         cout << " y=" << y << endl;
-
+        */
 
         active=1-active;
     }
