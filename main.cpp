@@ -3,9 +3,11 @@
 #include "ludo.h"
 using namespace std;
 #define TESTING 1
+#define I_HATE_TESTING 0
 
 
-int main() {
+int main()
+{
     int gd = DETECT, gm;
     int x, y;
     int location = 71;
@@ -15,34 +17,42 @@ int main() {
     initGame();
     initLudoBoard();
 
-    #if TESTING
+#if TESTING
     int roll;
     int i;
-    players[3].markers[3]=40;
-    players[2].markers[2]=27;
-    players[1].markers[1]=14;
+    int active=1;
+    players[3].markers[0]=40;
+    players[2].markers[0]=27;
+    players[1].markers[0]=14;
     players[0].markers[0]=1;
-    #endif // TESTING
+#endif // TESTING
 
     //printf("%d\n", DARKYELLOW);
-    while( location<=95 ) {
-        clearviewport();
-        #if 0
+    while( 1 )
+    {
+        drawLudoBoard();
+        setvisualpage(1-active);
+        setactivepage(active);
+        cleardevice();
+
+
+#if I_HATE_TESTING
         rollDice(&players[0]);
         moveCounter( &players[0], 0);
-        #endif // TESTING
+#endif // I_HATE_TESTING
 
-        drawLudoBoard();
+
         //test.location++;
-        drawOneMarker(location, color);
-        delay(1000);
+        //drawOneMarker(location, color);
+
         location++;
-        for( i=0; i<4; i++ ) {
+        for( i=0; i<4; i++ )
+        {
             rollDice( &players[i] );
+            moveCounter( &players[i], 0 );
         }
-        for( i=0; i<4; i++ ) {
-            moveCounter( &players[i], i );
-        }
+
+        delay(1000);
 
         getmouseclick(WM_LBUTTONDOWN, x, y);
         cout << "The mouse was clicked at: ";
@@ -50,6 +60,9 @@ int main() {
         cout << "x=" << x;
 
         cout << " y=" << y << endl;
+
+
+        active=1-active;
     }
 
     closegraph();
