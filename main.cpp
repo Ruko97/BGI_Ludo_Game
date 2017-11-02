@@ -5,33 +5,40 @@ using namespace std;
 #define TESTING 1
 #define I_HATE_TESTING 0
 
+Point click_point;
+
+int gameLoop() {
+
+    do {
+        click_point = getPointOfClick();
+    } while( getIndexOfPlayerWhoseDiceIsClicked(click_point) !=  presentPlayer );
+
+    rollDice( &players[presentPlayer] );
+    printf("%d\n", players[presentPlayer].die);
+
+    drawLudoBoard();
+    moveCounter( &players[presentPlayer], 1 );
+    gotoNextPlayer();
+    //delay(1000);
+}
 
 int main()
 {
-    int gd = DETECT, gm;
-    int x, y;
-    int location = 71;
-    int color = BLUE;
     initwindow(900, 700);
-
+    int active=1;
     initGame();
     initLudoBoard();
+    drawLudoBoard();
 
 #if TESTING
-    int roll;
-    int i, j=0;
-    int active=1;
-
-    for( i=0; i<4; i++ )
-    moveCounterFromHomeToPlay(&players[i], 78+4*i);
-
+    int i;
+    //for( i=0; i<4; i++ ) moveCounterFromHomeToPlay(&players[i], 78+4*i);
 
 #endif // TESTING
 
     //printf("%d\n", DARKYELLOW);
     while( 1 )
     {
-        drawLudoBoard();
         setvisualpage(1-active);
         setactivepage(active);
         cleardevice();
@@ -46,6 +53,7 @@ int main()
         //test.location++;
         //drawOneMarker(location, color);
 
+/*
         location++;
         j++;
         for( i=0; i<4; i++ )
@@ -55,6 +63,7 @@ int main()
         }
 
         delay(500);
+        */
         //if( j==6 ) putBackToStart(&players[3], 1);
         /*
         getmouseclick(WM_LBUTTONDOWN, x, y);
@@ -64,6 +73,8 @@ int main()
 
         cout << " y=" << y << endl;
         */
+
+        gameLoop();
 
         active=1-active;
     }
