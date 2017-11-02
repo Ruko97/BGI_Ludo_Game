@@ -33,8 +33,7 @@ struct player
     char name[100];
     int color;
     int die;
-    int movesToBeMade[4];
-    int presentNoOfMove, countersAtHome, countersAtEnd;
+    int countersAtHome, countersAtEnd;
 };
 
 typedef struct point Point;
@@ -43,7 +42,9 @@ typedef struct player Player;
 void* board_image;
 
 Player players[4];
-Player* presentPlayer;
+int presentPlayer;
+
+//int presentPlayersDie;
 
 #if BOGI
 /** counterLocation[i][0] contains the location occupied, counterLocation[i][1] */
@@ -441,7 +442,6 @@ void initPlayer( Player* player, int color )
 {
     int i, offset;
     player->color = color;
-    player->presentNoOfMove = -1;
 
     if( color==GREEN ) offset=77;
     else if( color==RED ) offset=81;
@@ -451,10 +451,11 @@ void initPlayer( Player* player, int color )
     for( i=0; i<4; i++ )
     {
         player->markers[i] = i+offset;
-        strcpy( player->name, "ADF" );
-        player->countersAtHome=4;
-        player->countersAtEnd=0;
     }
+    strcpy( player->name, "ADF" );
+    player->countersAtHome=4;
+    player->countersAtEnd=0;
+    player->die=0;
 }
 
 void initGame()
@@ -466,10 +467,9 @@ void initGame()
     for( i=0; i<4; i++ )
     {
         initPlayer( &players[i], colors[i] );
-        players[i].die = 0;
     }
 
-    presentPlayer = &players[0];
+    presentPlayer = 0;
     settextstyle(COMPLEX_FONT, HORIZ_DIR, TEXT_SIZE);
 }
 
@@ -538,6 +538,7 @@ void drawLudoBoard()
     putimage(0, 0, board_image, COPY_PUT);
     drawMarkers();
     drawAllTextBoxes();
+    //drawDice(&players[presentPlayer]);
     drawDiceOfAllPlayers();
 }
 
@@ -546,7 +547,6 @@ int rollDice( Player* player )
     int interim=rand()%14;
     if( interim<8 ) player->die=(interim/2)+1;
     else player->die=(interim+7)/3;
-    player->movesToBeMade[++(player->presentNoOfMove)] = player->die;
     return player->die;
 }
 
@@ -606,7 +606,7 @@ void eatCounter( int location, Player* self )
 void moveCounter( Player* player, int counterSerial )
 {
     int color = player->color;
-    int moves = player->movesToBeMade[(player->presentNoOfMove)--];
+    int moves = player->die;
     int *targetMarker = &(player->markers[counterSerial]);
     switch( color )
     {
@@ -750,9 +750,10 @@ void moveCounter( Player* player, int counterSerial )
     eatCounter( *targetMarker, player );
 }
 
-void moveCounterFromHomeToPlay( Player* player, int location )
+void moveCounterFromHomeToPlay( Player* player, int serialOfCounter )
 {
     int color = player->color;
+    int location = player->markers[serialOfCounter];
     int counterToBeMoved, i, target;
     for( i=0; i<4; i++ )
     {
@@ -768,4 +769,61 @@ void moveCounterFromHomeToPlay( Player* player, int location )
     else if( color==YELLOW ) target=40;
 
     player->markers[counterToBeMoved] = target;
+}
+
+void gotoNextPlayer() {
+    presentPlayer=(presentPlayer+1)%4;
+}
+
+Point getPointOfClick() {
+    Point output;
+    while( !ismouseclick(WM_LBUTTONDOWN) );
+    getmouseclick( WM_LBUTTONDOWN, output.x, output.y );
+    //clearmouseclick( WM_LBUTTONDOWN );
+    printf("%d--%d\n", output.x, output.y);
+    return output;
+}
+
+int getLocationWhereClickHasBeenMade( Point pointOfClick ) {
+    int i;
+    Point analyzing;
+    printf("%d-----%d\n", pointOfClick.x, pointOfClick.y);
+
+    for( i=1; i<=92; i++ ) {
+        analyzing = getPointOfLocation(i);
+        if( pointOfClick.x-analyzing.x<=35 && pointOfClick.x-analyzing.x>=0
+                && pointOfClick.y-analyzing.y<=35 && pointOfClick.y-analyzing.y>=0 ) {
+            printf("%d--%d\n", analyzing.x, analyzing.y);
+            return i;
+        }
+    }
+    return -1;
+}
+
+int getIndexOfPlayerWhoseDiceIsClicked( Point pointOfClick ) {
+    int i;
+    Point analyzing;
+
+    for( i=0; i<4; i++ ) {
+        analyzing = getLocationOfPlayersDie(&players[i]);
+        if( pointOfClick.x-analyzing.x<=50 && pointOfClick.x-analyzing.x>=0
+                && pointOfClick.y-analyzing.y<=50 && pointOfClick.y-analyzing.y>=0 ) {
+            printf("We got %d\n", i);
+            return i;
+        }
+    }
+    return -1;
+}
+
+bool atHome( Player* player, int serialOfCounter ) {
+    int offset, color=player->color;
+    int location=player->markers[serialOfCounter];
+
+    if( color==GREEN ) offset=77;
+    else if( color==BLUE ) offset=81;
+    else if( color==RED ) offset=85;
+    else if( color==YELLOW ) offset=89;
+
+    if( location-offset>=0 && location-offset<4 ) return true;
+    else return false;
 }
