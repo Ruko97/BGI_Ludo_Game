@@ -16,6 +16,10 @@ int gameLoop() {
     rollDice();
     printf("%d\n", presentPlayersDie);
 
+    do {
+        click_point = getPointOfClick();
+    } while ( getLocationWhereClickHasBeenMade( click_point ) != -1 &&  )
+
     drawLudoBoard();
     displayInfoAboutAllPlayersLocation();
 	/*do {
@@ -38,7 +42,7 @@ int main()
 
 #if TESTING
     int i=1;
-    locations[77] = 10;
+    //locations[77] = 10;
     //for( i=0; i<4; i++ ) moveCounterFromHomeToPlay(&players[i], 78+4*i);
 	//for (i = 77; i <= 92; i++) {
 
