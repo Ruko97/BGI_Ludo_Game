@@ -21,6 +21,10 @@ using namespace std;
 #define DIE_SIZE 45
 #define DIE_POINT_RADIUS 5
 #define FILL_ELLIPSE(X, Y, Z) fillellipse(X, Y, Z, Z)
+#define GREEN_COUNTER 1
+#define RED_COUNTER 8
+#define BLUE_COUNTER 64
+#define YELLOW_COUNTER 512
 
 struct point
 {
@@ -29,26 +33,37 @@ struct point
 
 struct player
 {
-    int markers[4];
     char name[100];
     int color;
-    int die;
-    int movesToBeMade[4];
-    int presentNoOfMove, countersAtHome, countersAtEnd;
+    int countersAtHome, countersAtEnd;
 };
 
 typedef struct point Point;
 typedef struct player Player;
 
+const int colors[] = { GREEN, RED, BLUE, YELLOW };
+const int counterValues[] = { GREEN_COUNTER, RED_COUNTER, BLUE_COUNTER, YELLOW_COUNTER };
 void* board_image;
 
 Player players[4];
-Player* presentPlayer;
+int presentPlayer;
+
+unsigned int locations[93];
+
+int presentPlayersDie;
 
 #if BOGI
 /** counterLocation[i][0] contains the location occupied, counterLocation[i][1] */
 int counterLocations[93][2];
 #endif // BOGI
+
+int getCorrespondingCounterValueForColor(int color)
+{
+    if (color == GREEN) return GREEN_COUNTER;
+    else if (color == RED) return RED_COUNTER;
+    else if (color == BLUE) return BLUE_COUNTER;
+    else if (color == YELLOW) return YELLOW_COUNTER;
+}
 
 Point getLocationOfPlayersName( Player* player )
 {
@@ -307,7 +322,7 @@ void initLudoBoard()
         each square is 35px
         distance between one home board to the other is 105 px*/
     setcolor(LIGHTRED);
-    setfillstyle(BOARD_FILL_STYLE ,RED);
+    setfillstyle(BOARD_FILL_STYLE,RED);
     rectangle(180, 80, 180+HOMEBOARDSIZE-1, 80+HOMEBOARDSIZE-1);
     floodfill(190, 90, LIGHTRED);
     circle(180+105, 80+105, HOME_COURT_SQUARE_RADIUS);
@@ -425,101 +440,187 @@ void drawOneMarker( int location, int color, int offset=0 )
     floodfill( target.x+offset+17, target.y+17, border_color );
 }
 
-void drawMarkers()
+void drawMarkers(int location )
 {
-    int i, j;
-    for( i=0; i<4; i++ )
+    unsigned int locationsValue = locations[location];
+    unsigned int totalNumberOfMarkersAtThatLocation = 0, numberOfMarkersAtThatLocation;
+    int i,colorOfTheMarker;
+    bool willDraw=false;
+
+    for (i = 0; i < 4; i++)
     {
-        for( j=0; j<4; j++ )
+        if (((locationsValue >> 3 * i) & 7) != 0)
         {
-            drawOneMarker( players[i].markers[j], players[i].color );
+            colorOfTheMarker = colors[i];
+            totalNumberOfMarkersAtThatLocation += ((locationsValue >> 3 * i) & 7);
+            willDraw = true;
+        }
+    }
+    if (!willDraw) return;
+
+    printf("Total Number Of Markers: %d\n", totalNumberOfMarkersAtThatLocation);
+    if (totalNumberOfMarkersAtThatLocation % 2 != 0)
+    {
+        int P = ((int)totalNumberOfMarkersAtThatLocation) / 2;
+        int j = 0 - P, k=0, colorOfTheMarker = colors[k];
+        int presentAnalysis = locationsValue & 7;
+
+        for (i = 0; i < 4; i++)
+        {
+            if (((locationsValue >> 3 * i) & 7) != 0)
+            {
+                colorOfTheMarker = colors[i];
+                numberOfMarkersAtThatLocation += ((locationsValue >> 3 * i) & 7);
+                for( k=0; k<numberOfMarkersAtThatLocation; k++ )
+                {
+                    drawOneMarker( location, colorOfTheMarker, 3*j++ );
+                    if( j>P ) break;
+                }
+            }
+
+        }
+    }
+    else
+    {
+
+        int P = ((int)totalNumberOfMarkersAtThatLocation) / 2;
+        int j = 0 - P, k=0;
+        int presentAnalysis = locationsValue & 7;
+        for (i = 0; i < 4; i++)
+        {
+            if (((locationsValue >> 3 * i) & 7) != 0)
+            {
+                colorOfTheMarker = colors[i];
+                numberOfMarkersAtThatLocation += ((locationsValue >> 3 * i) & 7);
+                for( k=0; k<numberOfMarkersAtThatLocation; k++ )
+                {
+                    if(j!=0)
+                    {
+                        drawOneMarker( location, colorOfTheMarker, 3*j++ );
+                    }
+                    else
+                    {
+                        j++;
+                    }
+                    if( j> P) break;
+                }
+            }
         }
     }
 }
 
-void initPlayer( Player* player, int color )
+void drawAllMarkers()
 {
-    int i, offset;
-    player->color = color;
-    player->presentNoOfMove = -1;
-
-    if( color==GREEN ) offset=77;
-    else if( color==RED ) offset=81;
-    else if( color==BLUE ) offset=85;
-    else if( color==YELLOW ) offset=89;
-
-    for( i=0; i<4; i++ )
+    int i, j;
+    for( i=1; i<92; i++ )
     {
-        player->markers[i] = i+offset;
-        strcpy( player->name, "ADF" );
-        player->countersAtHome=4;
-        player->countersAtEnd=0;
+        if (locations[i] > 0)
+        {
+            drawMarkers(i);
+        }
+    }
+}
+
+void initPlayer( Player* player, int color, char name[] )
+{
+    int i, offset, counterValue;
+    player->color = color;
+
+    if (color == GREEN)
+    {
+        offset = 77;
+    }
+    else if (color == RED)
+    {
+        offset = 81;
+    }
+    else if (color == BLUE)
+    {
+        offset = 85;
+    }
+    else if (color == YELLOW)
+    {
+        offset = 89;
+    }
+
+    strcpy( player->name, name );
+    player->countersAtHome=4;
+    player->countersAtEnd=0;
+
+    for (i = 0; i < 4; i++)
+    {
+        locations[offset + i] += getCorrespondingCounterValueForColor(color);
     }
 }
 
 void initGame()
 {
     srand(time(NULL));
-    int colors[] = {GREEN, RED, BLUE, YELLOW};
+
     int i;
 
+    memset(locations, 0, sizeof(locations));
     for( i=0; i<4; i++ )
     {
-        initPlayer( &players[i], colors[i] );
-        players[i].die = 0;
+        initPlayer( &players[i], colors[i], "Player" );
     }
 
-    presentPlayer = &players[0];
+
+
+    presentPlayer = 0;
     settextstyle(COMPLEX_FONT, HORIZ_DIR, TEXT_SIZE);
 }
 
 
 
-void drawDice( Player* player )
+void drawDice( bool showNumber, Player* player )
 {
-    Point analysing = getLocationOfPlayersDie(player);
+    Point analysing = getLocationOfPlayersDie( player );
     setcolor( WHITE );
     setfillstyle( SOLID_FILL, WHITE );
 
     rectangle( analysing.x, analysing.y, analysing.x+DIE_SIZE, analysing.y+DIE_SIZE );
     floodfill(analysing.x+1, analysing.y+1, WHITE);
-    int number = player->die;
-    setfillstyle( SOLID_FILL, BLACK );
-    switch( number )
+    if (showNumber)
     {
-    case 1:
-        FILL_ELLIPSE(analysing.x+22, analysing.y+22, DIE_POINT_RADIUS);
-        break;
-    case 2:
-        FILL_ELLIPSE(analysing.x+10, analysing.y+10, DIE_POINT_RADIUS);
-        FILL_ELLIPSE(analysing.x+35, analysing.y+35, DIE_POINT_RADIUS);
-        break;
-    case 3:
-        FILL_ELLIPSE(analysing.x+10, analysing.y+10, DIE_POINT_RADIUS);
-        FILL_ELLIPSE(analysing.x+22, analysing.y+22, DIE_POINT_RADIUS);
-        FILL_ELLIPSE(analysing.x+35, analysing.y+35, DIE_POINT_RADIUS);
-        break;
-    case 4:
-        FILL_ELLIPSE(analysing.x+12, analysing.y+12, DIE_POINT_RADIUS);
-        FILL_ELLIPSE(analysing.x+33, analysing.y+12, DIE_POINT_RADIUS);
-        FILL_ELLIPSE(analysing.x+12, analysing.y+33, DIE_POINT_RADIUS);
-        FILL_ELLIPSE(analysing.x+33, analysing.y+33, DIE_POINT_RADIUS);
-        break;
-    case 5:
-        FILL_ELLIPSE(analysing.x+10, analysing.y+10, DIE_POINT_RADIUS);
-        FILL_ELLIPSE(analysing.x+22, analysing.y+22, DIE_POINT_RADIUS);
-        FILL_ELLIPSE(analysing.x+35, analysing.y+35, DIE_POINT_RADIUS);
-        FILL_ELLIPSE(analysing.x+35, analysing.y+10, DIE_POINT_RADIUS);
-        FILL_ELLIPSE(analysing.x+10, analysing.y+35, DIE_POINT_RADIUS);
-        break;
-    case 6:
-        FILL_ELLIPSE(analysing.x+10, analysing.y+10, DIE_POINT_RADIUS);
-        FILL_ELLIPSE(analysing.x+35, analysing.y+10, DIE_POINT_RADIUS);
-        FILL_ELLIPSE(analysing.x+10, analysing.y+22, DIE_POINT_RADIUS);
-        FILL_ELLIPSE(analysing.x+35, analysing.y+22, DIE_POINT_RADIUS);
-        FILL_ELLIPSE(analysing.x+10, analysing.y+35, DIE_POINT_RADIUS);
-        FILL_ELLIPSE(analysing.x+35, analysing.y+35, DIE_POINT_RADIUS);
-        break;
+        int number = presentPlayersDie;
+        setfillstyle(SOLID_FILL, BLACK);
+        switch (number)
+        {
+        case 1:
+            FILL_ELLIPSE(analysing.x + 22, analysing.y + 22, DIE_POINT_RADIUS);
+            break;
+        case 2:
+            FILL_ELLIPSE(analysing.x + 10, analysing.y + 10, DIE_POINT_RADIUS);
+            FILL_ELLIPSE(analysing.x + 35, analysing.y + 35, DIE_POINT_RADIUS);
+            break;
+        case 3:
+            FILL_ELLIPSE(analysing.x + 10, analysing.y + 10, DIE_POINT_RADIUS);
+            FILL_ELLIPSE(analysing.x + 22, analysing.y + 22, DIE_POINT_RADIUS);
+            FILL_ELLIPSE(analysing.x + 35, analysing.y + 35, DIE_POINT_RADIUS);
+            break;
+        case 4:
+            FILL_ELLIPSE(analysing.x + 12, analysing.y + 12, DIE_POINT_RADIUS);
+            FILL_ELLIPSE(analysing.x + 33, analysing.y + 12, DIE_POINT_RADIUS);
+            FILL_ELLIPSE(analysing.x + 12, analysing.y + 33, DIE_POINT_RADIUS);
+            FILL_ELLIPSE(analysing.x + 33, analysing.y + 33, DIE_POINT_RADIUS);
+            break;
+        case 5:
+            FILL_ELLIPSE(analysing.x + 10, analysing.y + 10, DIE_POINT_RADIUS);
+            FILL_ELLIPSE(analysing.x + 22, analysing.y + 22, DIE_POINT_RADIUS);
+            FILL_ELLIPSE(analysing.x + 35, analysing.y + 35, DIE_POINT_RADIUS);
+            FILL_ELLIPSE(analysing.x + 35, analysing.y + 10, DIE_POINT_RADIUS);
+            FILL_ELLIPSE(analysing.x + 10, analysing.y + 35, DIE_POINT_RADIUS);
+            break;
+        case 6:
+            FILL_ELLIPSE(analysing.x + 10, analysing.y + 10, DIE_POINT_RADIUS);
+            FILL_ELLIPSE(analysing.x + 35, analysing.y + 10, DIE_POINT_RADIUS);
+            FILL_ELLIPSE(analysing.x + 10, analysing.y + 22, DIE_POINT_RADIUS);
+            FILL_ELLIPSE(analysing.x + 35, analysing.y + 22, DIE_POINT_RADIUS);
+            FILL_ELLIPSE(analysing.x + 10, analysing.y + 35, DIE_POINT_RADIUS);
+            FILL_ELLIPSE(analysing.x + 35, analysing.y + 35, DIE_POINT_RADIUS);
+            break;
+        }
     }
 }
 
@@ -529,58 +630,61 @@ void drawDiceOfAllPlayers()
 
     for( i=0; i<4; i++ )
     {
-        drawDice(&players[i]);
+        drawDice(i==presentPlayer, &players[i]);
     }
 }
 
 void drawLudoBoard()
 {
     putimage(0, 0, board_image, COPY_PUT);
-    drawMarkers();
+    drawAllMarkers();
     drawAllTextBoxes();
+    //drawDice(&players[presentPlayer]);
     drawDiceOfAllPlayers();
 }
 
-int rollDice( Player* player )
+int rollDice()
 {
     int interim=rand()%14;
-    if( interim<8 ) player->die=(interim/2)+1;
-    else player->die=(interim+7)/3;
-    player->movesToBeMade[++(player->presentNoOfMove)] = player->die;
-    return player->die;
+    if( interim<8 ) presentPlayersDie=(interim/2)+1;
+    else presentPlayersDie=(interim+7)/3;
+    return presentPlayersDie;
 }
 
-void putBackToStart( Player* whoseToBeReturned, int serialToBeReturned )
+void putBackOneToStart(int location, int color)
 {
-    int color = whoseToBeReturned->color;
-    int i, j, offset;
-    bool found;
-
-    if( color==GREEN ) offset=77;
-    else if( color==RED ) offset=81;
-    else if( color==BLUE ) offset=85;
-    else if( color==YELLOW ) offset=89;
-
-    for( i=offset; i<offset+4; i++ )
+    int i, offset, counterValue;
+    if (color == GREEN)
     {
-        found=false;
-        for( j=0; j<4; j++ )
+        offset = 77;
+    }
+    else if (color == RED)
+    {
+        offset = 81;
+    }
+    else if (color == BLUE)
+    {
+        offset = 85;
+    }
+    else if (color == YELLOW)
+    {
+        offset = 89;
+    }
+
+    for (i = offset; i < offset + 4; i++)
+    {
+        if (locations[i] == 0)
         {
-            if( whoseToBeReturned->markers[j]==i )
-            {
-                found=true;
-            }
-        }
-        if( !found )
-        {
-            whoseToBeReturned->markers[serialToBeReturned]=i;
+            locations[location]-=getCorrespondingCounterValueForColor(color);
+            locations[i] += getCorrespondingCounterValueForColor(color);
+            break;
         }
     }
 }
 
 void eatCounter( int location, Player* self )
 {
-#if 1
+#if 0
     int i, j;
     for( i=0; i<4; i++ )
     {
@@ -599,173 +703,304 @@ void eatCounter( int location, Player* self )
         }
     }
 #endif // BOGI
+    int self_shift, color = self->color, numberOfCounters, i, j;
+    if (color == GREEN)
+    {
+        self_shift = 0;
+    }
+    else if (color == RED)
+    {
+        self_shift = 1;
+    }
+    else if (color == BLUE)
+    {
+        self_shift = 2;
+    }
+    else if (color == YELLOW)
+    {
+        self_shift = 3;
+    }
 
-
+    for (i = 0; i < 4; i++)
+    {
+        if (i != self_shift)
+        {
+            numberOfCounters = (locations[location] >> 3 * i) & 7;
+            for (j = 0; j < numberOfCounters; j++)
+            {
+                putBackOneToStart(location, colors[i]);
+            }
+        }
+    }
 }
 
-void moveCounter( Player* player, int counterSerial )
+void putACounterFromHereToThere(int startLocation, int destinationLocation, int counterValue, Player* player)
+{
+    locations[startLocation] -= counterValue;
+    locations[destinationLocation] += counterValue;
+    if (destinationLocation != 1 && destinationLocation != 14 && destinationLocation != 27 && destinationLocation != 40)
+    {
+        eatCounter(destinationLocation, player);
+    }
+}
+
+void moveCounter( Player* player, int counterLocation )
 {
     int color = player->color;
-    int moves = player->movesToBeMade[(player->presentNoOfMove)--];
-    int *targetMarker = &(player->markers[counterSerial]);
+    int counterValue;
+    int moves = presentPlayersDie;
     switch( color )
     {
     case GREEN:
-        if( *targetMarker<=72)
+        counterValue = GREEN_COUNTER;
+        if( counterLocation<=72)
         {
-            if( *targetMarker>=46 && *targetMarker<=51 && *targetMarker+moves>51 )
+            if( counterLocation>=46 && counterLocation<=51 && counterLocation+moves>51 )
             {
-                if( *targetMarker+moves!=57 ) *targetMarker = *targetMarker+moves+1;
+                if (counterLocation + moves != 57) putACounterFromHereToThere(counterLocation, counterLocation + moves + 1, counterValue, player);
                 else
                 {
-                    *targetMarker=73;
+                    putACounterFromHereToThere(counterLocation, 73, counterValue, player);
                     player->countersAtEnd++;
                 }
             }
-            else if( *targetMarker>=53 && *targetMarker<=57 )
+            else if( counterLocation>=53 && counterLocation<=57 )
             {
-                if( *targetMarker+moves==58 )
+                if( counterLocation+moves==58 )
                 {
-                    *targetMarker=73;
+                    putACounterFromHereToThere(counterLocation, 73, counterValue, player);
                     player->countersAtEnd++;
                 }
-                else if( *targetMarker+moves<58 )
+                else if( counterLocation+moves<58 )
                 {
-                    *targetMarker+=moves;
+                    putACounterFromHereToThere(counterLocation, counterLocation+moves, counterValue, player);
                 }
             }
             else
             {
-                *targetMarker+=moves;
+                putACounterFromHereToThere(counterLocation, counterLocation + moves, counterValue, player);
             }
         }
         break;
 
     case RED:
-        if( *targetMarker<=72 )
+        counterValue = RED_COUNTER;
+        if( counterLocation<=72 )
         {
-            if( *targetMarker>46 && *targetMarker<=52 && *targetMarker+moves>52 )
+            if( counterLocation>46 && counterLocation<=52 && counterLocation+moves>52 )
             {
-                *targetMarker = *targetMarker+moves-52;
+                putACounterFromHereToThere(counterLocation, counterLocation+moves-52, counterValue, player);
             }
-            else if ( *targetMarker>6 && *targetMarker<=12 && *targetMarker+moves>12 )
+            else if ( counterLocation>6 && counterLocation<=12 && counterLocation+moves>12 )
             {
-                if( *targetMarker+moves!=18 ) *targetMarker = *targetMarker+moves+45;
+                if( counterLocation+moves!=18 ) putACounterFromHereToThere(counterLocation, counterLocation+moves+45, counterValue, player);
                 else
                 {
-                    *targetMarker==74;
+                    putACounterFromHereToThere(counterLocation, 74, counterValue, player);
                     player->countersAtEnd++;
                 }
             }
-            else if ( *targetMarker>=58 && *targetMarker<=62 )
+            else if ( counterLocation>=58 && counterLocation<=62 )
             {
-                if( *targetMarker+moves==63 )
+                if( counterLocation+moves==63 )
                 {
-                    *targetMarker=74;
+                    putACounterFromHereToThere(counterLocation, 74, counterValue, player);
                     player->countersAtEnd++;
                 }
-                else if ( *targetMarker+moves<63 )
+                else if ( counterLocation+moves<63 )
                 {
-                    *targetMarker+=moves;
+                    putACounterFromHereToThere(counterLocation, counterLocation+moves, counterValue, player);
                 }
             }
             else
             {
-                *targetMarker+=moves;
+                putACounterFromHereToThere(counterLocation, counterLocation+moves, counterValue, player);
             }
         }
         break;
 
     case BLUE:
-        if( *targetMarker<=72 )
+        counterValue = BLUE_COUNTER;
+        if( counterLocation<=72 )
         {
-            if( *targetMarker>46 && *targetMarker<=52 && *targetMarker+moves>52 )
+            if( counterLocation>46 && counterLocation<=52 && counterLocation+moves>52 )
             {
-                *targetMarker = *targetMarker+moves-52;
+                putACounterFromHereToThere(counterLocation, counterLocation+moves-52, counterValue, player);
             }
-            else if ( *targetMarker>19 && *targetMarker<=25 && *targetMarker+moves>25 )
+            else if ( counterLocation>19 && counterLocation<=25 && counterLocation+moves>25 )
             {
-                if( *targetMarker+moves!=31 ) *targetMarker = *targetMarker+moves+37;
+                if( counterLocation+moves!=31 ) counterLocation = counterLocation+moves+37;
                 else
                 {
-                    *targetMarker=75;
+                    putACounterFromHereToThere(counterLocation, 75, counterValue, player);
                     player->countersAtEnd++;
                 }
             }
-            else if ( *targetMarker>=63 && *targetMarker<=67 )
+            else if ( counterLocation>=63 && counterLocation<=67 )
             {
-                if( *targetMarker+moves==68 )
+                if( counterLocation+moves==68 )
                 {
-                    *targetMarker=75;
+                    putACounterFromHereToThere(counterLocation, 75, counterValue, player);
                     player->countersAtEnd++;
                 }
-                else if ( *targetMarker+moves<68 )
+                else if ( counterLocation+moves<68 )
                 {
-                    *targetMarker+=moves;
+                    putACounterFromHereToThere(counterLocation, counterLocation+moves, counterValue, player);
                 }
             }
             else
             {
-                *targetMarker+=moves;
+                putACounterFromHereToThere(counterLocation, counterLocation+moves, counterValue, player);
             }
         }
         break;
 
     case YELLOW:
-        if( *targetMarker<=72 )
+        counterValue = YELLOW_COUNTER;
+        if( counterLocation<=72 )
         {
-            if( *targetMarker>46 && *targetMarker<=52 && *targetMarker+moves>52 )
+            if( counterLocation>46 && counterLocation<=52 && counterLocation+moves>52 )
             {
-                *targetMarker = *targetMarker+moves-52;
+                putACounterFromHereToThere( counterLocation, counterLocation+moves-52, counterValue, player);
             }
-            else if ( *targetMarker>32 && *targetMarker<=38 && *targetMarker+moves>38 )
+            else if ( counterLocation>32 && counterLocation<=38 && counterLocation+moves>38 )
             {
-                if( *targetMarker+moves!=44 ) *targetMarker = *targetMarker+moves+29;
+                if( counterLocation+moves!=44 ) putACounterFromHereToThere(counterLocation, counterLocation+moves+29, counterValue, player);
                 else
                 {
-                    *targetMarker=76;
+                    putACounterFromHereToThere(counterLocation, 76, counterValue, player);
                     player->countersAtEnd++;
                 }
             }
-            else if ( *targetMarker>=68 && *targetMarker<=72 )
+            else if ( counterLocation>=68 && counterLocation<=72 )
             {
-                if( *targetMarker+moves==73 )
+                if( counterLocation+moves==73 )
                 {
-                    *targetMarker=76;
+                    putACounterFromHereToThere(counterLocation, 76, counterValue, player);
                     player->countersAtEnd++;
                 }
-                else if ( *targetMarker+moves<73 )
+                else if ( counterLocation+moves<73 )
                 {
-                    *targetMarker+=moves;
+                    putACounterFromHereToThere(counterLocation, counterLocation+moves, counterValue, player);
                 }
             }
             else
             {
-                *targetMarker+=moves;
+                putACounterFromHereToThere(counterLocation, counterLocation+moves, counterValue, player);
             }
         }
         break;
     }
 
-    eatCounter( *targetMarker, player );
+
 }
 
 void moveCounterFromHomeToPlay( Player* player, int location )
 {
     int color = player->color;
     int counterToBeMoved, i, target;
-    for( i=0; i<4; i++ )
-    {
-        if( player->markers[i]==location )
-        {
-            counterToBeMoved = i;
-            break;
-        }
-    }
+
     if( color==GREEN ) target=1;
     else if( color==RED ) target=14;
     else if( color==BLUE ) target=27;
     else if( color==YELLOW ) target=40;
 
-    player->markers[counterToBeMoved] = target;
+    putACounterFromHereToThere(location, target, getCorrespondingCounterValueForColor(color), player);
+}
+
+void gotoNextPlayer()
+{
+    presentPlayer=(presentPlayer+1)%4;
+}
+
+Point getPointOfClick()
+{
+    Point output;
+    while( !ismouseclick(WM_LBUTTONDOWN) );
+    getmouseclick( WM_LBUTTONDOWN, output.x, output.y );
+    //clearmouseclick( WM_LBUTTONDOWN );
+    printf("%d--%d\n", output.x, output.y);
+    return output;
+}
+
+int getLocationWhereClickHasBeenMade( Point pointOfClick )
+{
+    int i;
+    Point analyzing;
+    printf("%d-----%d\n", pointOfClick.x, pointOfClick.y);
+
+    for( i=1; i<=92; i++ )
+    {
+        analyzing = getPointOfLocation(i);
+        if( pointOfClick.x-analyzing.x<=35 && pointOfClick.x-analyzing.x>=0
+                && pointOfClick.y-analyzing.y<=35 && pointOfClick.y-analyzing.y>=0 )
+        {
+            printf("%d--%d\n", analyzing.x, analyzing.y);
+            return i;
+        }
+    }
+    return -1;
+}
+
+int getIndexOfPlayerWhoseDiceIsClicked( Point pointOfClick )
+{
+    int i;
+    Point analyzing;
+
+    for( i=0; i<4; i++ )
+    {
+        analyzing = getLocationOfPlayersDie(&players[i]);
+        if( pointOfClick.x-analyzing.x<=50 && pointOfClick.x-analyzing.x>=0
+                && pointOfClick.y-analyzing.y<=50 && pointOfClick.y-analyzing.y>=0 )
+        {
+            printf("We got %d\n", i);
+            return i;
+        }
+    }
+    return -1;
+}
+
+bool atHome( Player* player, int location )
+{
+    int offset, color=player->color;
+
+    if( color==GREEN ) offset=77;
+    else if( color==BLUE ) offset=81;
+    else if( color==RED ) offset=85;
+    else if( color==YELLOW ) offset=89;
+
+    if( location-offset>=0 && location-offset<4 && locations[location]>0 ) return true;
+    else return false;
+}
+
+bool isThereACounterOfThatPlayer(int location, Player* player)
+{
+    int color = player->color, self_shift;
+    if (color == GREEN)
+    {
+        self_shift = 0;
+    }
+    else if (color == RED)
+    {
+        self_shift = 1;
+    }
+    else if (color == BLUE)
+    {
+        self_shift = 2;
+    }
+    else if (color == YELLOW)
+    {
+        self_shift = 3;
+    }
+
+    return (((locations[location] >> 3 * self_shift) & 7) > 0);
+}
+
+void displayInfoAboutAllPlayersLocation()
+{
+    int i;
+    for( i=1; i<=92; i++ )
+    {
+        printf("%d: %o\n", i, locations[i]);
+    }
 }
