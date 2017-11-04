@@ -35,6 +35,7 @@ struct player
 {
     char name[100];
     int color;
+    int markers[4];
     int countersAtHome, countersAtEnd;
 };
 
@@ -512,7 +513,7 @@ void drawMarkers(int location )
 void drawAllMarkers()
 {
     int i, j;
-    for( i=1; i<92; i++ )
+    for( i=1; i<=92; i++ )
     {
         if (locations[i] > 0)
         {
@@ -550,6 +551,7 @@ void initPlayer( Player* player, int color, char name[] )
     for (i = 0; i < 4; i++)
     {
         locations[offset + i] += getCorrespondingCounterValueForColor(color);
+        markers[i] = offset+i;
     }
 }
 
@@ -651,9 +653,9 @@ int rollDice()
     return presentPlayersDie;
 }
 
-void putBackOneToStart(int location, int color)
+void putBackOneToStart(int location, int color, Player* player)
 {
-    int i, offset, counterValue;
+    int i, offset, counterValue, markerToBeReturned;
     if (color == GREEN)
     {
         offset = 77;
@@ -671,12 +673,22 @@ void putBackOneToStart(int location, int color)
         offset = 89;
     }
 
+    for( i=0; i<4; i++ )
+    {
+        if( player->markers[i]==location )
+        {
+            markerToBeReturned = i;
+            break;
+        }
+    }
+
     for (i = offset; i < offset + 4; i++)
     {
         if (locations[i] == 0)
         {
             locations[location]-=getCorrespondingCounterValueForColor(color);
             locations[i] += getCorrespondingCounterValueForColor(color);
+            player->markers[markerToBeReturned] = i;
             break;
         }
     }
@@ -728,7 +740,7 @@ void eatCounter( int location, Player* self )
             numberOfCounters = (locations[location] >> 3 * i) & 7;
             for (j = 0; j < numberOfCounters; j++)
             {
-                putBackOneToStart(location, colors[i]);
+                putBackOneToStart(location, colors[i], &players[i] );
             }
         }
     }
@@ -736,8 +748,17 @@ void eatCounter( int location, Player* self )
 
 void putACounterFromHereToThere(int startLocation, int destinationLocation, int counterValue, Player* player)
 {
+    int i;
     locations[startLocation] -= counterValue;
     locations[destinationLocation] += counterValue;
+    for( i=0; i<4; i++ )
+    {
+        if( player->markers[i]==startLocation )
+        {
+            player->markers[i]=destinationLocation;
+            break;
+        }
+    }
     if (destinationLocation != 1 && destinationLocation != 14 && destinationLocation != 27 && destinationLocation != 40)
     {
         eatCounter(destinationLocation, player);
@@ -905,7 +926,10 @@ void moveCounterFromHomeToPlay( Player* player, int location )
     else if( color==BLUE ) target=27;
     else if( color==YELLOW ) target=40;
 
-    putACounterFromHereToThere(location, target, getCorrespondingCounterValueForColor(color), player);
+    if( locations[location]!=0 )
+    {
+        putACounterFromHereToThere(location, target, getCorrespondingCounterValueForColor(color), player);
+    }
 }
 
 void gotoNextPlayer()
@@ -1001,6 +1025,8 @@ void displayInfoAboutAllPlayersLocation()
     int i;
     for( i=1; i<=92; i++ )
     {
-        printf("%d: %o\n", i, locations[i]);
+        printf("%15d: %o%c", i, locations[i], ( i%3==0 ) ? '\n' : '\t' );
     }
 }
+
+//void display in
