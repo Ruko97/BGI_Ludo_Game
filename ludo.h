@@ -32,7 +32,6 @@ struct player
     int markers[4];
     char name[100];
     int color;
-    int die;
     int countersAtHome, countersAtEnd;
 };
 
@@ -44,7 +43,7 @@ void* board_image;
 Player players[4];
 int presentPlayer;
 
-//int presentPlayersDie;
+int presentPlayersDie;
 
 #if BOGI
 /** counterLocation[i][0] contains the location occupied, counterLocation[i][1] */
@@ -308,7 +307,7 @@ void initLudoBoard()
         each square is 35px
         distance between one home board to the other is 105 px*/
     setcolor(LIGHTRED);
-    setfillstyle(BOARD_FILL_STYLE ,RED);
+    setfillstyle(BOARD_FILL_STYLE,RED);
     rectangle(180, 80, 180+HOMEBOARDSIZE-1, 80+HOMEBOARDSIZE-1);
     floodfill(190, 90, LIGHTRED);
     circle(180+105, 80+105, HOME_COURT_SQUARE_RADIUS);
@@ -475,7 +474,7 @@ void initGame()
 
 
 
-void drawDice( Player* player )
+void drawDice( Player* player, bool will_draw )
 {
     Point analysing = getLocationOfPlayersDie(player);
     setcolor( WHITE );
@@ -485,41 +484,44 @@ void drawDice( Player* player )
     floodfill(analysing.x+1, analysing.y+1, WHITE);
     int number = player->die;
     setfillstyle( SOLID_FILL, BLACK );
-    switch( number )
+    if( will_draw )
     {
-    case 1:
-        FILL_ELLIPSE(analysing.x+22, analysing.y+22, DIE_POINT_RADIUS);
-        break;
-    case 2:
-        FILL_ELLIPSE(analysing.x+10, analysing.y+10, DIE_POINT_RADIUS);
-        FILL_ELLIPSE(analysing.x+35, analysing.y+35, DIE_POINT_RADIUS);
-        break;
-    case 3:
-        FILL_ELLIPSE(analysing.x+10, analysing.y+10, DIE_POINT_RADIUS);
-        FILL_ELLIPSE(analysing.x+22, analysing.y+22, DIE_POINT_RADIUS);
-        FILL_ELLIPSE(analysing.x+35, analysing.y+35, DIE_POINT_RADIUS);
-        break;
-    case 4:
-        FILL_ELLIPSE(analysing.x+12, analysing.y+12, DIE_POINT_RADIUS);
-        FILL_ELLIPSE(analysing.x+33, analysing.y+12, DIE_POINT_RADIUS);
-        FILL_ELLIPSE(analysing.x+12, analysing.y+33, DIE_POINT_RADIUS);
-        FILL_ELLIPSE(analysing.x+33, analysing.y+33, DIE_POINT_RADIUS);
-        break;
-    case 5:
-        FILL_ELLIPSE(analysing.x+10, analysing.y+10, DIE_POINT_RADIUS);
-        FILL_ELLIPSE(analysing.x+22, analysing.y+22, DIE_POINT_RADIUS);
-        FILL_ELLIPSE(analysing.x+35, analysing.y+35, DIE_POINT_RADIUS);
-        FILL_ELLIPSE(analysing.x+35, analysing.y+10, DIE_POINT_RADIUS);
-        FILL_ELLIPSE(analysing.x+10, analysing.y+35, DIE_POINT_RADIUS);
-        break;
-    case 6:
-        FILL_ELLIPSE(analysing.x+10, analysing.y+10, DIE_POINT_RADIUS);
-        FILL_ELLIPSE(analysing.x+35, analysing.y+10, DIE_POINT_RADIUS);
-        FILL_ELLIPSE(analysing.x+10, analysing.y+22, DIE_POINT_RADIUS);
-        FILL_ELLIPSE(analysing.x+35, analysing.y+22, DIE_POINT_RADIUS);
-        FILL_ELLIPSE(analysing.x+10, analysing.y+35, DIE_POINT_RADIUS);
-        FILL_ELLIPSE(analysing.x+35, analysing.y+35, DIE_POINT_RADIUS);
-        break;
+        switch( number )
+        {
+        case 1:
+            FILL_ELLIPSE(analysing.x+22, analysing.y+22, DIE_POINT_RADIUS);
+            break;
+        case 2:
+            FILL_ELLIPSE(analysing.x+10, analysing.y+10, DIE_POINT_RADIUS);
+            FILL_ELLIPSE(analysing.x+35, analysing.y+35, DIE_POINT_RADIUS);
+            break;
+        case 3:
+            FILL_ELLIPSE(analysing.x+10, analysing.y+10, DIE_POINT_RADIUS);
+            FILL_ELLIPSE(analysing.x+22, analysing.y+22, DIE_POINT_RADIUS);
+            FILL_ELLIPSE(analysing.x+35, analysing.y+35, DIE_POINT_RADIUS);
+            break;
+        case 4:
+            FILL_ELLIPSE(analysing.x+12, analysing.y+12, DIE_POINT_RADIUS);
+            FILL_ELLIPSE(analysing.x+33, analysing.y+12, DIE_POINT_RADIUS);
+            FILL_ELLIPSE(analysing.x+12, analysing.y+33, DIE_POINT_RADIUS);
+            FILL_ELLIPSE(analysing.x+33, analysing.y+33, DIE_POINT_RADIUS);
+            break;
+        case 5:
+            FILL_ELLIPSE(analysing.x+10, analysing.y+10, DIE_POINT_RADIUS);
+            FILL_ELLIPSE(analysing.x+22, analysing.y+22, DIE_POINT_RADIUS);
+            FILL_ELLIPSE(analysing.x+35, analysing.y+35, DIE_POINT_RADIUS);
+            FILL_ELLIPSE(analysing.x+35, analysing.y+10, DIE_POINT_RADIUS);
+            FILL_ELLIPSE(analysing.x+10, analysing.y+35, DIE_POINT_RADIUS);
+            break;
+        case 6:
+            FILL_ELLIPSE(analysing.x+10, analysing.y+10, DIE_POINT_RADIUS);
+            FILL_ELLIPSE(analysing.x+35, analysing.y+10, DIE_POINT_RADIUS);
+            FILL_ELLIPSE(analysing.x+10, analysing.y+22, DIE_POINT_RADIUS);
+            FILL_ELLIPSE(analysing.x+35, analysing.y+22, DIE_POINT_RADIUS);
+            FILL_ELLIPSE(analysing.x+10, analysing.y+35, DIE_POINT_RADIUS);
+            FILL_ELLIPSE(analysing.x+35, analysing.y+35, DIE_POINT_RADIUS);
+            break;
+        }
     }
 }
 
@@ -529,7 +531,7 @@ void drawDiceOfAllPlayers()
 
     for( i=0; i<4; i++ )
     {
-        drawDice(&players[i]);
+        drawDice(&players[i],i==presentPlayer);
     }
 }
 
@@ -545,9 +547,9 @@ void drawLudoBoard()
 int rollDice( Player* player )
 {
     int interim=rand()%14;
-    if( interim<8 ) player->die=(interim/2)+1;
-    else player->die=(interim+7)/3;
-    return player->die;
+    if( interim<8 ) presentPlayersDie=(interim/2)+1;
+    else presentPlayersDie=(interim+7)/3;
+    return presentPlayersDie;
 }
 
 void putBackToStart( Player* whoseToBeReturned, int serialToBeReturned )
@@ -606,7 +608,7 @@ void eatCounter( int location, Player* self )
 void moveCounter( Player* player, int counterSerial )
 {
     int color = player->color;
-    int moves = player->die;
+    int moves = presentPlayersDie;
     int *targetMarker = &(player->markers[counterSerial]);
     switch( color )
     {
@@ -771,11 +773,13 @@ void moveCounterFromHomeToPlay( Player* player, int serialOfCounter )
     player->markers[counterToBeMoved] = target;
 }
 
-void gotoNextPlayer() {
+void gotoNextPlayer()
+{
     presentPlayer=(presentPlayer+1)%4;
 }
 
-Point getPointOfClick() {
+Point getPointOfClick()
+{
     Point output;
     while( !ismouseclick(WM_LBUTTONDOWN) );
     getmouseclick( WM_LBUTTONDOWN, output.x, output.y );
@@ -784,15 +788,18 @@ Point getPointOfClick() {
     return output;
 }
 
-int getLocationWhereClickHasBeenMade( Point pointOfClick ) {
+int getLocationWhereClickHasBeenMade( Point pointOfClick )
+{
     int i;
     Point analyzing;
     printf("%d-----%d\n", pointOfClick.x, pointOfClick.y);
 
-    for( i=1; i<=92; i++ ) {
+    for( i=1; i<=92; i++ )
+    {
         analyzing = getPointOfLocation(i);
         if( pointOfClick.x-analyzing.x<=35 && pointOfClick.x-analyzing.x>=0
-                && pointOfClick.y-analyzing.y<=35 && pointOfClick.y-analyzing.y>=0 ) {
+                && pointOfClick.y-analyzing.y<=35 && pointOfClick.y-analyzing.y>=0 )
+        {
             printf("%d--%d\n", analyzing.x, analyzing.y);
             return i;
         }
@@ -800,14 +807,17 @@ int getLocationWhereClickHasBeenMade( Point pointOfClick ) {
     return -1;
 }
 
-int getIndexOfPlayerWhoseDiceIsClicked( Point pointOfClick ) {
+int getIndexOfPlayerWhoseDiceIsClicked( Point pointOfClick )
+{
     int i;
     Point analyzing;
 
-    for( i=0; i<4; i++ ) {
+    for( i=0; i<4; i++ )
+    {
         analyzing = getLocationOfPlayersDie(&players[i]);
         if( pointOfClick.x-analyzing.x<=50 && pointOfClick.x-analyzing.x>=0
-                && pointOfClick.y-analyzing.y<=50 && pointOfClick.y-analyzing.y>=0 ) {
+                && pointOfClick.y-analyzing.y<=50 && pointOfClick.y-analyzing.y>=0 )
+        {
             printf("We got %d\n", i);
             return i;
         }
@@ -815,7 +825,8 @@ int getIndexOfPlayerWhoseDiceIsClicked( Point pointOfClick ) {
     return -1;
 }
 
-bool atHome( Player* player, int serialOfCounter ) {
+bool atHome( Player* player, int serialOfCounter )
+{
     int offset, color=player->color;
     int location=player->markers[serialOfCounter];
 
