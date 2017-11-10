@@ -208,9 +208,12 @@ int counterInputLoop()
     int Y;
     //drawInstruction(TELL_TO_MOVE);
     click_point = getPointOfClick();
-    if( !(thereIsACounterOfPlayerInThatLocation(&players[presentPlayer],getLocationWhereClickHasBeenMade(click_point), &Y)
-          && canMoveAParticularCounter( &players[presentPlayer], presentPlayersDie, Y )) )
+    if( !(thereIsACounterOfPlayerInThatLocation(&players[presentPlayer],getLocationWhereClickHasBeenMade(click_point), &Y)) )
+        return counterInputLoop();
+    else {
+        if( !canMoveAParticularCounter( &players[presentPlayer], presentPlayersDie, Y ) )
             return counterInputLoop();
+    }
     logs[logi][0] = presentPlayer;
     logs[logi][1] = Y;
     logs[logi][2] = players[presentPlayer].markers[Y];
