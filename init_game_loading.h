@@ -11,6 +11,8 @@ int location, i;
 int roll_count=0, roll_num=0;
 char names[4][100];
 FILE *score_file;
+int logs[3][3];
+int logi;
 
 void high_score_show();
 int menu_mechanism();
@@ -204,6 +206,9 @@ int counterInputLoop()
     if( !(thereIsACounterOfPlayerInThatLocation(&players[presentPlayer],getLocationWhereClickHasBeenMade(click_point), &Y)
             && canMoveAParticularCounter( &players[presentPlayer], presentPlayersDie, Y ) ) )
         return counterInputLoop();
+    logs[logi][0] = presentPlayer;
+    logs[logi][1] = Y;
+    logs[logi][2] = players[presentPlayer].markers[Y];
     moveCounter( &players[presentPlayer], Y, presentPlayersDie );
 }
 
@@ -212,6 +217,7 @@ void game_loop()
     int active=1;
     float bogi=0.0;
     int show=0;
+    logi=0;
     bool firsttime=true;
     while( 1 )
     {
@@ -260,6 +266,11 @@ void game_loop()
         else if( bogi==1 )
         {
             roll_num = rollDice();
+             if( roll_num==6 && roll_count==2 )
+            {
+                for( int j=0; j<=logi; j++ ) players[logs[j][0]].markers[logs[j][1]] = logs[j][2];
+                logi=0, bogi=4;
+            }
             /*if(players[presentPlayer].countersAtHome==4 && roll_num!=6)
             {
                 bogi=4;
@@ -295,10 +306,10 @@ void game_loop()
         }
         else if (bogi==3)
         {
-            if(roll_num==6 && roll_count==0) roll_count++, bogi=5;
-            else if(roll_num==6 && roll_count==1) roll_count++, bogi=5;
-            else if(roll_num==6 && roll_count==2) roll_count=0, bogi=4;
-            else bogi=4;
+            if(roll_num==6 && roll_count==0) roll_count++, bogi=5, logi++;
+            else if(roll_num==6 && roll_count==1) roll_count++, bogi=5, logi++;
+            else if(roll_num==6 && roll_count==2) roll_count=0, bogi=4, logi=0;
+            else bogi=4, logi=0;
         }
         else if ( bogi==4 )
         {
