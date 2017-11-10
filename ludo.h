@@ -289,7 +289,7 @@ bool canMoveAParticularCounter( Player* player, int dicesValue, int serialOfCoun
 {
     int analysis = player->markers[serialOfCounter];
     int color = player->color;
-    if( presentPlayersDie!=6 )
+    if( dicesValue!=6 )
     {
         if( atHome(player, serialOfCounter) )
         {
@@ -298,22 +298,22 @@ bool canMoveAParticularCounter( Player* player, int dicesValue, int serialOfCoun
     }
     if( color==GREEN )
     {
-        if( (analysis>=53 && analysis<58 && analysis+presentPlayersDie>=58) || analysis==73 )
+        if( (analysis>=53 && analysis<58 && analysis+dicesValue>58) || analysis==73 )
             return false;
     }
     else if( color==RED )
     {
-        if( (analysis>=58 && analysis<63 && analysis+presentPlayersDie>=63) || analysis==74 )
+        if( (analysis>=58 && analysis<63 && analysis+dicesValue>63) || analysis==74 )
             return false;
     }
     else if( color==BLUE )
     {
-        if( (analysis>=63 && analysis<68 && analysis+presentPlayersDie>=68) || analysis==75 )
+        if( (analysis>=63 && analysis<68 && analysis+dicesValue>68) || analysis==75 )
             return false;
     }
     else if( color==YELLOW )
     {
-        if( (analysis>=68 && analysis<73 && analysis+presentPlayersDie>=73) || analysis==76 )
+        if( (analysis>=68 && analysis<73 && analysis+dicesValue>73) || analysis==76 )
             return false;
     }
 
