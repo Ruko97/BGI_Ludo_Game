@@ -13,6 +13,11 @@ char names[4][100];
 FILE *score_file;
 int logs[3][3];
 int logi;
+struct ranks
+{
+    int ranking, score;
+    char name[100];
+} presentRanks[4], globalRanks[5];
 
 void high_score_show();
 int menu_mechanism();
@@ -266,7 +271,7 @@ void game_loop()
         else if( bogi==1 )
         {
             roll_num = rollDice();
-             if( roll_num==6 && roll_count==2 )
+            if( roll_num==6 && roll_count==2 )
             {
                 for( int j=0; j<=logi; j++ ) players[logs[j][0]].markers[logs[j][1]] = logs[j][2];
                 logi=0, bogi=4;
@@ -566,10 +571,18 @@ int menu_mechanism()
     cleardevice();
 }
 
+void copyRanks( struct ranks* destination, const struct ranks* source )
+{
+    destination->ranking=source->ranking;
+    destination->score=source->score;
+    strcpy( destination->name, source->name );
+}
+
 void showWinners()
 {
-    int i;
+    int i, j, k;
     cleardevice();
+
     if(isWin()) cout << "WON THE GAME" << endl;
     //char rankings[5][100]
     settextstyle(3,HORIZ_DIR,8);
@@ -585,6 +598,9 @@ void showWinners()
             {
                 char output_result[100];
                 sprintf(output_result, "%-8d%-15s%-7d", players[player_num].ranking, players[player_num].name, players[player_num].eaten);
+                presentRanks[loop-1].ranking=players[player_num].ranking;
+                presentRanks[loop-1].score=players[player_num].eaten+(4-loop);
+                strcpy( presentRanks[loop-1].name, players[player_num].name );
                 outtextxy(getmaxwidth()/2-300, getmaxheight()/2-200+loop*100, output_result);
             }
         }
@@ -595,6 +611,9 @@ void showWinners()
         {
             char output_result[100];
             sprintf(output_result, "%-8d%-15s%-7d", 4, players[player_num].name, players[player_num].eaten);
+            presentRanks[3].ranking=4;
+            presentRanks[3].score=players[player_num].eaten;
+            strcpy( presentRanks[3].name, players[player_num].name );
             outtextxy(getmaxwidth()/2-300, getmaxheight()/2-200+4*100, output_result);
         }
     }
@@ -602,6 +621,37 @@ void showWinners()
     //cout << players[1].ranking << " " << players[1].name << " " << players[1].eaten << endl;
     //cout << players[2].ranking << " " << players[2].name << " " << players[2].eaten << endl;
     //cout << players[3].ranking << " " << players[3].name << " " << players[3].eaten << endl;
+    score_file = fopen( "high_score.txt", "r" );
+    for(i=0; i<5; i++)
+    {
+        globalRanks[i].ranking = i+1;
+        fscanf(score_file,"%s%*c",globalRanks[i].name);
+        fscanf(score_file,"%d\n",&globalRanks[i].score);
+        //printf("%s\n",__out__);
+        //outtextxy(getmaxwidth()/2-300,getmaxheight()/2-200+80*(i+1),__out__);
+        //outtextxy(getmaxwidth()/2-200,getmaxheight()/2-200+80*(i+1),s);
+        //outtextxy(getmaxwidth()/2-000,getmaxheight()/2-200+80*(i+1),score);
+    }
+    fclose(score_file);
+    for(i=0; i<4; i++)
+    {
+        for(j=0; j<5; j++)
+        {
+            if(presentRanks[i].score>globalRanks[j].score)
+            {
+                for( k=3; k>=j; k-- ) {
+                    copyRanks( &globalRanks[k+1], &globalRanks[k] );
+                }
+                copyRanks( &globalRanks[j], &presentRanks[i] );
+            }
+        }
+    }
+    score_file = fopen("high_score.txt", "w");
+    for(i=0; i<5; i++)
+    {
+        fprintf(score_file, "%s %d\n", globalRanks[i].name, globalRanks[i].score);
+    }
+    fclose(score_file);
     delay(5000);
     menu_mechanism();
 }
