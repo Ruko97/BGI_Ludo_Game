@@ -298,22 +298,22 @@ bool canMoveAParticularCounter( Player* player, int dicesValue, int serialOfCoun
     }
     if( color==GREEN )
     {
-        if( (analysis>=53 && analysis<58 && analysis+presentPlayersDie>=58) || locations==73 )
+        if( (analysis>=53 && analysis<58 && analysis+presentPlayersDie>=58) || analysis==73 )
             return false;
     }
     else if( color==RED )
     {
-        if( (analysis>=58 && analysis<63 && analysis+presentPlayersDie>=63) || locations==74 )
+        if( (analysis>=58 && analysis<63 && analysis+presentPlayersDie>=63) || analysis==74 )
             return false;
     }
     else if( color==BLUE )
     {
-        if( (analysis>=63 && analysis<68 && analysis+presentPlayersDie>=68) || locations==75 )
+        if( (analysis>=63 && analysis<68 && analysis+presentPlayersDie>=68) || analysis==75 )
             return false;
     }
     else if( color==YELLOW )
     {
-        if( (analysis>=68 && analysis<73 && analysis+presentPlayersDie>=73) || locations==76 )
+        if( (analysis>=68 && analysis<73 && analysis+presentPlayersDie>=73) || analysis==76 )
             return false;
     }
 
