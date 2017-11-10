@@ -284,24 +284,24 @@ void game_loop()
                 settextstyle(4,HORIZ_DIR,4);
                 outtextxy(1020,600,"Oh, no counter can be moved!");
                 delay(1000);
-            }
-            else
-            {*/
-            if( !canMoveAnyCounter( &players[presentPlayer], presentPlayersDie ) )
-            {
-                bogi=2.5;
-                show=1;
-                //drawLudoBoard( true, NO_MOVE_AVALIABLE );
-                drawDice( presentPlayersDie );
-                drawInstruction( NO_MOVE_AVALIABLE );
-                //getPointOfClick();
-            }
+            }*/
             else
             {
-                bogi=2;
-                drawLudoBoard( true, TELL_TO_MOVE );
+                if( !canMoveAnyCounter( &players[presentPlayer], presentPlayersDie ) )
+                {
+                    bogi=2.5;
+                    show=1;
+                    //drawLudoBoard( true, NO_MOVE_AVALIABLE );
+                    drawDice( presentPlayersDie );
+                    drawInstruction( NO_MOVE_AVALIABLE );
+                    //getPointOfClick();
+                }
+                else
+                {
+                    bogi=2;
+                    drawLudoBoard( true, TELL_TO_MOVE );
+                }
             }
-            //}
         }
         else if ( bogi==2 )
         {
@@ -639,7 +639,8 @@ void showWinners()
         {
             if(presentRanks[i].score>globalRanks[j].score)
             {
-                for( k=3; k>=j; k-- ) {
+                for( k=3; k>=j; k-- )
+                {
                     copyRanks( &globalRanks[k+1], &globalRanks[k] );
                 }
                 copyRanks( &globalRanks[j], &presentRanks[i] );
