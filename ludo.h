@@ -325,7 +325,8 @@ bool canMoveAnyCounter( Player* player, int dicesValue )
     int unmovableCounters=0, i, analysis, color;
     for( i=0; i<4; i++ )
     {
-        if( canMoveAParticularCounter( player, dicesValue, i ) ) {
+        if( canMoveAParticularCounter( player, dicesValue, i ) )
+        {
             return true;
         }
     }
@@ -990,6 +991,51 @@ bool thereIsACounterOfPlayerInThatLocation(Player* player, int location, int* ou
     }
     return false;
 }
+
+/*
+bool thereIsACounterOfPlayerInThatLocationAndItCanMove( Player* player, int location, int* output, int dicesValue )
+{
+    int i;
+    for( i=0; i<4; i++ )
+    {
+        if( player->markers[i] == location )
+        {
+            int analysis = player->markers[i];
+            int color = player->color;
+            if( dicesValue!=6 )
+            {
+                if( atHome(player, i) )
+                {
+                    return false;
+                }
+            }
+            if( color==GREEN )
+            {
+                if( (analysis>=53 && analysis<58 && analysis+dicesValue>58) || analysis==73 )
+                    return false;
+            }
+            else if( color==RED )
+            {
+                if( (analysis>=58 && analysis<63 && analysis+dicesValue>63) || analysis==74 )
+                    return false;
+            }
+            else if( color==BLUE )
+            {
+                if( (analysis>=63 && analysis<68 && analysis+dicesValue>68) || analysis==75 )
+                    return false;
+            }
+            else if( color==YELLOW )
+            {
+                if( (analysis>=68 && analysis<73 && analysis+dicesValue>73) || analysis==76 )
+                    return false;
+            }
+
+            return true;
+        }
+    }
+    return false;
+}
+*/
 
 bool isWin()
 {
