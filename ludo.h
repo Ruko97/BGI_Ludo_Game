@@ -1,4 +1,5 @@
 #include <graphics.h>
+#include <graphics.h>
 #include <stdio.h>
 #include <math.h>
 #include <time.h>
@@ -18,9 +19,13 @@ using namespace std;
 #define DARKYELLOWCOLOR 20
 #define HOME_COURT_SQUARE_RADIUS 85
 #define TEXT_SIZE 3
-#define DIE_SIZE 45
-#define DIE_POINT_RADIUS 5
+#define DIE_SIZE 210
+///DICE UP-LEFT (1020, 220)
+#define DIE_POINT_RADIUS 8
 #define FILL_ELLIPSE(X, Y, Z) fillellipse(X, Y, Z, Z)
+#define TELL_TO_ROLL 1
+#define TELL_TO_MOVE 2
+#define NO_MOVE_AVALIABLE 3
 
 struct point
 {
@@ -32,9 +37,10 @@ struct player
     int markers[4];
     char name[100];
     int color;
-    int die;
-    int movesToBeMade[4];
-    int presentNoOfMove, countersAtHome, countersAtEnd;
+    int countersAtHome, countersAtEnd;
+    int eaten;
+    int ranking;
+    bool rank_check;
 };
 
 typedef struct point Point;
@@ -43,24 +49,10 @@ typedef struct player Player;
 void* board_image;
 
 Player players[4];
-Player* presentPlayer;
+int presentPlayer;
 
-#if BOGI
-/** counterLocation[i][0] contains the location occupied, counterLocation[i][1] */
-int counterLocations[93][2];
-#endif // BOGI
-
-Point getLocationOfPlayersName( Player* player )
-{
-    Point output;
-
-    if( player->color==GREEN ) output.x=35, output.y=425;
-    else if( player->color==RED ) output.x=35, output.y=110;
-    else if( player->color==BLUE ) output.x=740, output.y=110;
-    else if( player->color==YELLOW ) output.x=740, output.y=425;
-
-    return output;
-}
+int presentPlayersDie;
+int presentRanking=1;
 
 Point getLocationOfPlayersDie( Player* player )
 {
@@ -78,7 +70,7 @@ Point getPointOfLocation( int location )
 {
     Point output;
 
-    if( location>=1 && location<=5 )        /* Normal locations */
+    if( location>=1 && location<=5 )        /** NORMAL LOCATIONS */
     {
         location--;
         output.x = 390;
@@ -150,7 +142,7 @@ Point getPointOfLocation( int location )
         output.x = 460-location*35;
         output.y = 570;
     }
-    else if( location<=57 )         /* Start of pucca gutis */
+    else if( location<=57 )         /** START OF PAKA GUTIS */
     {
         location-=53;
         output.x = 425;
@@ -174,7 +166,7 @@ Point getPointOfLocation( int location )
         output.x = 635-location*35;
         output.y = 325;
     }
-    else if( location==73 )         /* start of gutis in center */
+    else if( location==73 )         /** START OF GUTIS IN CENTER */
     {
         output.x = 425;
         output.y = 360;
@@ -194,7 +186,7 @@ Point getPointOfLocation( int location )
         output.x = 460;
         output.y = 325;
     }
-    else if( location==77 )         /* start of green home points */
+    else if( location==77 )         /** START OF GREEN HOME POINTS */
     {
         output.x = 215+10;
         output.y = 430+10;
@@ -214,7 +206,7 @@ Point getPointOfLocation( int location )
         output.x = 320-10;
         output.y = 535-10;
     }
-    else if( location==81 )         /* start of red home points */
+    else if( location==81 )         /** START OF RED HOME POINTS */
     {
         output.x = 215+10;
         output.y = 115+10;
@@ -234,7 +226,7 @@ Point getPointOfLocation( int location )
         output.x = 320-10;
         output.y = 220-10;
     }
-    else if( location==85 )         /* start of blue home points */
+    else if( location==85 )         /** START OF BLUE HOME POINTS */
     {
         output.x = 530+10;
         output.y = 115+10;
@@ -254,7 +246,7 @@ Point getPointOfLocation( int location )
         output.x = 635-10;
         output.y = 220-10;
     }
-    else if( location==89 )         /* start of yellow home points */
+    else if( location==89 )         /** START OF YELLOW HOME POINTS */
     {
         output.x = 530+10;
         output.y = 430+10;
@@ -278,36 +270,112 @@ Point getPointOfLocation( int location )
     return output;
 }
 
-void drawTextBoxes( Player* player )
+bool atHome( Player* player, int serialOfCounter )
+{
+    int offset, color=player->color;
+    int location=player->markers[serialOfCounter];
+
+    if( color==GREEN ) offset=77;
+    else if( color==RED ) offset=81;
+    else if( color==BLUE ) offset=85;
+    else if( color==YELLOW ) offset=89;
+    printf( "Loc: %d\t Off: %d\n", location, offset);
+
+    if( location-offset>=0 && location-offset<4 ) return true;
+    else return false;
+}
+
+bool canMoveAParticularCounter( Player* player, int dicesValue, int serialOfCounter )
+{
+    int analysis = player->markers[serialOfCounter];
+    int color = player->color;
+    if( presentPlayersDie!=6 )
+    {
+        if( atHome(player, serialOfCounter) )
+        {
+            return false;
+        }
+    }
+    if( color==GREEN )
+    {
+        if( (analysis>=53 && analysis<58 && analysis+presentPlayersDie>=58) || analysis==73 )
+            return false;
+    }
+    else if( color==RED )
+    {
+        if( (analysis>=58 && analysis<63 && analysis+presentPlayersDie>=63) || analysis==74 )
+            return false;
+    }
+    else if( color==BLUE )
+    {
+        if( (analysis>=63 && analysis<68 && analysis+presentPlayersDie>=68) || analysis==75 )
+            return false;
+    }
+    else if( color==YELLOW )
+    {
+        if( (analysis>=68 && analysis<73 && analysis+presentPlayersDie>=73) || analysis==76 )
+            return false;
+    }
+
+    return true;
+}
+
+bool canMoveAnyCounter( Player* player, int dicesValue )
+{
+    int unmovableCounters=0, i, analysis, color;
+    for( i=0; i<4; i++ )
+    {
+        if( canMoveAParticularCounter( player, dicesValue, i ) ) {
+            return true;
+        }
+    }
+    return false;
+}
+
+Point getLocationOfPlayersName( Player* player )
+{
+    Point output;
+
+    if( player->color==GREEN ) output.x=35, output.y=425;
+    else if( player->color==RED ) output.x=35, output.y=110;
+    else if( player->color==BLUE ) output.x=740, output.y=110;
+    else if( player->color==YELLOW ) output.x=740, output.y=425;
+
+    return output;
+}
+
+void drawPlayerBoxes( Player* player )
 {
     Point analysing = getLocationOfPlayersName(player);
     setcolor( WHITE );
-
     outtextxy( analysing.x, analysing.y, player->name );
 }
+
 
 void drawAllTextBoxes()
 {
     int i;
+    settextstyle(0,HORIZ_DIR,2);
     for( i=0; i<4; i++ )
     {
-        drawTextBoxes(&players[i]);
+        drawPlayerBoxes(&players[i]);
     }
+}
+
+void drawTextBoxes( Player* player )
+{
+    setcolor( player->color );
+    settextstyle(COMPLEX_FONT, HORIZ_DIR, 6 );
+    outtextxy( 1020, 85, player->name );
 }
 
 void initLudoBoard()
 {
-#if BOGI
-    setcolor(CHARCOAL);
-    setfillstyle(BOARD_FILL_STYLE, CHARCOAL);
-    rectangle(180, 80, 705, 605);
-    floodfill(200, 100, CHARCOAL);
-#endif
-    /*Each home board is 210px
-        each square is 35px
-        distance between one home board to the other is 105 px*/
+    /**EACH HOME BOARD IS 210PX
+        EACH SQUARE IS 35PX
+        DISTANCE FROM ONE HOMEBOARD TO OTHER IS 105PX*/
     setcolor(LIGHTRED);
-    setfillstyle(BOARD_FILL_STYLE ,RED);
+    setfillstyle(BOARD_FILL_STYLE,RED);
     rectangle(180, 80, 180+HOMEBOARDSIZE-1, 80+HOMEBOARDSIZE-1);
     floodfill(190, 90, LIGHTRED);
     circle(180+105, 80+105, HOME_COURT_SQUARE_RADIUS);
@@ -381,8 +449,6 @@ void initLudoBoard()
         floodfill(480+i, 330, WHITE);
     }
 
-    drawAllTextBoxes();
-
     board_image = malloc(imagesize(0, 0, getmaxx(), getmaxy()));
     getimage(0, 0, getmaxx(), getmaxy(), board_image);
 }
@@ -420,134 +486,207 @@ void drawOneMarker( int location, int color, int offset=0 )
     setfillstyle(COUNTER_FILL_STYLE, counter_color);
 
     Point target = getPointOfLocation(location);
-    //printf("%d %d\n", target.x, target.y);
+    FILL_ELLIPSE( target.x+offset+17, target.y+17, COUNTER_RADIUS );
     circle( target.x+offset+17, target.y+17, COUNTER_RADIUS );
-    floodfill( target.x+offset+17, target.y+17, border_color );
+    //floodfill( target.x+offset+17, target.y+17, border_color );
 }
 
 void drawMarkers()
 {
-    int i, j;
-    for( i=0; i<4; i++ )
+    int i, j, k, l, m, totalNumberOfMarkersAtALocation;
+    for( k=1; k<=92; k++ )
     {
-        for( j=0; j<4; j++ )
+        totalNumberOfMarkersAtALocation=0;
+        for( i=0; i<4; i++ )
         {
-            drawOneMarker( players[i].markers[j], players[i].color );
+            for( j=0; j<4; j++ )
+            {
+                if( players[i].markers[j] == k ) totalNumberOfMarkersAtALocation++;
+                //drawOneMarker( players[i].markers[j], players[i].color );
+            }
+        }
+        if( totalNumberOfMarkersAtALocation%2!=0 )
+        {
+            l = totalNumberOfMarkersAtALocation/2;
+            m = 0-l;
+            for( i=0; i<4; i++ )
+            {
+                for( j=0; j<4; j++ )
+                {
+                    if( players[i].markers[j] == k )
+                    {
+                        drawOneMarker( players[i].markers[j], players[i].color, 3*m );
+                        m++;
+                    }
+                }
+            }
+        }
+        else
+        {
+            l = totalNumberOfMarkersAtALocation/2;
+            m = 0-l;
+            for( i=0; i<4; i++ )
+            {
+                for( j=0; j<4; j++ )
+                {
+                    if( players[i].markers[j] == k )
+                    {
+                        if( m!=0 )
+                        {
+                            drawOneMarker( players[i].markers[j], players[i].color, 3*m );
+                            m++;
+                        }
+                        else
+                        {
+                            m++;
+                            drawOneMarker( players[i].markers[j], players[i].color, 3*m );
+                            m++;
+                        }
+                    }
+                }
+            }
         }
     }
 }
 
-void initPlayer( Player* player, int color )
+void initPlayer( Player* player, int color, char p1[], char p2[], char p3[], char p4[])
 {
     int i, offset;
+    char NAME[100];
     player->color = color;
-    player->presentNoOfMove = -1;
 
-    if( color==GREEN ) offset=77;
-    else if( color==RED ) offset=81;
-    else if( color==BLUE ) offset=85;
-    else if( color==YELLOW ) offset=89;
+    if( color==GREEN ) offset=77, strcpy( player->name, p1 );
+    else if( color==RED ) offset=81, strcpy( player->name, p2 );
+    else if( color==BLUE ) offset=85, strcpy( player->name, p3 );
+    else if( color==YELLOW ) offset=89, strcpy( player->name, p4 );
 
     for( i=0; i<4; i++ )
     {
         player->markers[i] = i+offset;
-        strcpy( player->name, "ADF" );
-        player->countersAtHome=4;
-        player->countersAtEnd=0;
     }
+    player->countersAtHome=4;
+    player->countersAtEnd=0;
+    player->eaten=0;
+    player->rank_check=true;
+    player->ranking=0;
 }
 
-void initGame()
+void initGame(char p1[], char p2[], char p3[], char p4[])
 {
     srand(time(NULL));
     int colors[] = {GREEN, RED, BLUE, YELLOW};
-    int i;
+    int i, j;
 
     for( i=0; i<4; i++ )
     {
-        initPlayer( &players[i], colors[i] );
-        players[i].die = 0;
+        initPlayer( &players[i], colors[i], p1, p2, p3, p4);
+        /*for( j=0; j<4; j++ ) {
+            players[i].markers[j] = 53+6*i+j/2;
+        }*/
     }
 
-    presentPlayer = &players[0];
+    presentPlayer = 0;
     settextstyle(COMPLEX_FONT, HORIZ_DIR, TEXT_SIZE);
 }
 
-
-
-void drawDice( Player* player )
+void drawDice( int number )
 {
-    Point analysing = getLocationOfPlayersDie(player);
+    Point analysing;
+    analysing.x = 1020;
+    analysing.y = 220;
     setcolor( WHITE );
     setfillstyle( SOLID_FILL, WHITE );
 
     rectangle( analysing.x, analysing.y, analysing.x+DIE_SIZE, analysing.y+DIE_SIZE );
     floodfill(analysing.x+1, analysing.y+1, WHITE);
-    int number = player->die;
     setfillstyle( SOLID_FILL, BLACK );
     switch( number )
     {
     case 1:
-        FILL_ELLIPSE(analysing.x+22, analysing.y+22, DIE_POINT_RADIUS);
+        FILL_ELLIPSE(analysing.x+105, analysing.y+105, DIE_POINT_RADIUS);
         break;
     case 2:
-        FILL_ELLIPSE(analysing.x+10, analysing.y+10, DIE_POINT_RADIUS);
-        FILL_ELLIPSE(analysing.x+35, analysing.y+35, DIE_POINT_RADIUS);
+        FILL_ELLIPSE(analysing.x+52, analysing.y+52, DIE_POINT_RADIUS);
+        FILL_ELLIPSE(analysing.x+210-52, analysing.y+210-52, DIE_POINT_RADIUS);
         break;
     case 3:
-        FILL_ELLIPSE(analysing.x+10, analysing.y+10, DIE_POINT_RADIUS);
-        FILL_ELLIPSE(analysing.x+22, analysing.y+22, DIE_POINT_RADIUS);
-        FILL_ELLIPSE(analysing.x+35, analysing.y+35, DIE_POINT_RADIUS);
+        FILL_ELLIPSE(analysing.x+52, analysing.y+52, DIE_POINT_RADIUS);
+        FILL_ELLIPSE(analysing.x+105, analysing.y+105, DIE_POINT_RADIUS);
+        FILL_ELLIPSE(analysing.x+210-52, analysing.y+210-52, DIE_POINT_RADIUS);
         break;
     case 4:
-        FILL_ELLIPSE(analysing.x+12, analysing.y+12, DIE_POINT_RADIUS);
-        FILL_ELLIPSE(analysing.x+33, analysing.y+12, DIE_POINT_RADIUS);
-        FILL_ELLIPSE(analysing.x+12, analysing.y+33, DIE_POINT_RADIUS);
-        FILL_ELLIPSE(analysing.x+33, analysing.y+33, DIE_POINT_RADIUS);
+        FILL_ELLIPSE(analysing.x+52, analysing.y+52, DIE_POINT_RADIUS);
+        FILL_ELLIPSE(analysing.x+52, analysing.y+210-52, DIE_POINT_RADIUS);
+        FILL_ELLIPSE(analysing.x+210-52, analysing.y+52, DIE_POINT_RADIUS);
+        FILL_ELLIPSE(analysing.x+210-52, analysing.y+210-52, DIE_POINT_RADIUS);
         break;
     case 5:
-        FILL_ELLIPSE(analysing.x+10, analysing.y+10, DIE_POINT_RADIUS);
-        FILL_ELLIPSE(analysing.x+22, analysing.y+22, DIE_POINT_RADIUS);
-        FILL_ELLIPSE(analysing.x+35, analysing.y+35, DIE_POINT_RADIUS);
-        FILL_ELLIPSE(analysing.x+35, analysing.y+10, DIE_POINT_RADIUS);
-        FILL_ELLIPSE(analysing.x+10, analysing.y+35, DIE_POINT_RADIUS);
+        FILL_ELLIPSE(analysing.x+52, analysing.y+52, DIE_POINT_RADIUS);
+        FILL_ELLIPSE(analysing.x+210-52, analysing.y+210-52, DIE_POINT_RADIUS);
+        FILL_ELLIPSE(analysing.x+52, analysing.y+210-52, DIE_POINT_RADIUS);
+        FILL_ELLIPSE(analysing.x+210-52, analysing.y+52, DIE_POINT_RADIUS);
+        FILL_ELLIPSE(analysing.x+105, analysing.y+105, DIE_POINT_RADIUS);
         break;
     case 6:
-        FILL_ELLIPSE(analysing.x+10, analysing.y+10, DIE_POINT_RADIUS);
-        FILL_ELLIPSE(analysing.x+35, analysing.y+10, DIE_POINT_RADIUS);
-        FILL_ELLIPSE(analysing.x+10, analysing.y+22, DIE_POINT_RADIUS);
-        FILL_ELLIPSE(analysing.x+35, analysing.y+22, DIE_POINT_RADIUS);
-        FILL_ELLIPSE(analysing.x+10, analysing.y+35, DIE_POINT_RADIUS);
-        FILL_ELLIPSE(analysing.x+35, analysing.y+35, DIE_POINT_RADIUS);
+        FILL_ELLIPSE(analysing.x+52, analysing.y+210-52, DIE_POINT_RADIUS);
+        FILL_ELLIPSE(analysing.x+105, analysing.y+210-52, DIE_POINT_RADIUS);
+        FILL_ELLIPSE(analysing.x+210-52, analysing.y+210-52, DIE_POINT_RADIUS);
+        FILL_ELLIPSE(analysing.x+52, analysing.y+52, DIE_POINT_RADIUS);
+        FILL_ELLIPSE(analysing.x+105, analysing.y+52, DIE_POINT_RADIUS);
+        FILL_ELLIPSE(analysing.x+210-52, analysing.y+52, DIE_POINT_RADIUS);
         break;
     }
 }
 
-void drawDiceOfAllPlayers()
+void drawInstruction( int instruction )
 {
-    int i;
-
-    for( i=0; i<4; i++ )
+    settextstyle(4, HORIZ_DIR, 2);
+    setcolor(WHITE);
+    switch( instruction )
     {
-        drawDice(&players[i]);
+    case TELL_TO_ROLL:
+        outtextxy( 900, 600, "Click the dice to roll!" );
+        break;
+    case TELL_TO_MOVE:
+        outtextxy(900, 600, "Click a counter to move!");
+        break;
+    case NO_MOVE_AVALIABLE:
+        outtextxy(900, 600, "Oh, no counter can be moved!");
+        outtextxy(900, 650, "Click anywhere to continue...");
+        break;
     }
 }
 
-void drawLudoBoard()
+void drawLudoBoard( bool not0die, int instruction )
 {
     putimage(0, 0, board_image, COPY_PUT);
     drawMarkers();
     drawAllTextBoxes();
-    drawDiceOfAllPlayers();
+    drawTextBoxes( &players[presentPlayer] );
+    if( not0die )
+        drawDice( presentPlayersDie );
+    else
+        drawDice(0);
+    drawInstruction( instruction );
 }
 
-int rollDice( Player* player )
+void drawLudoBoard0Die()
+{
+    putimage(0, 0, board_image, COPY_PUT);
+    drawMarkers();
+    drawAllTextBoxes();
+    drawTextBoxes( &players[presentPlayer] );
+    drawDice( 0 );
+    //drawDiceOfAllPlayers();
+    //drawInstruction( instr )
+}
+
+int rollDice()
 {
     int interim=rand()%14;
-    if( interim<8 ) player->die=(interim/2)+1;
-    else player->die=(interim+7)/3;
-    player->movesToBeMade[++(player->presentNoOfMove)] = player->die;
-    return player->die;
+    if( interim<8) presentPlayersDie=(interim/2)+1;
+    else presentPlayersDie=(interim+7)/3;
+    return presentPlayersDie;
 }
 
 void putBackToStart( Player* whoseToBeReturned, int serialToBeReturned )
@@ -576,11 +715,11 @@ void putBackToStart( Player* whoseToBeReturned, int serialToBeReturned )
             whoseToBeReturned->markers[serialToBeReturned]=i;
         }
     }
+
 }
 
 void eatCounter( int location, Player* self )
 {
-#if 1
     int i, j;
     for( i=0; i<4; i++ )
     {
@@ -593,20 +732,19 @@ void eatCounter( int location, Player* self )
                 {
                     printf("i=%d\t\tj=%d\n", i, j);
                     putBackToStart(&players[i], j);
+                    self->eaten++;
                 }
                 //}
             }
         }
     }
-#endif // BOGI
-
 
 }
 
-void moveCounter( Player* player, int counterSerial )
+void moveCounter( Player* player, int counterSerial, int dicesRoll )
 {
     int color = player->color;
-    int moves = player->movesToBeMade[(player->presentNoOfMove)--];
+    int moves = presentPlayersDie;
     int *targetMarker = &(player->markers[counterSerial]);
     switch( color )
     {
@@ -637,6 +775,13 @@ void moveCounter( Player* player, int counterSerial )
             else
             {
                 *targetMarker+=moves;
+            }
+        }
+        else if( *targetMarker>=77 && *targetMarker<81 )
+        {
+            if( dicesRoll==6 )
+            {
+                *targetMarker = 1;
             }
         }
         break;
@@ -674,6 +819,13 @@ void moveCounter( Player* player, int counterSerial )
                 *targetMarker+=moves;
             }
         }
+        else if ( *targetMarker>=81 && *targetMarker<85 )
+        {
+            if( dicesRoll==6 )
+            {
+                *targetMarker = 14;
+            }
+        }
         break;
 
     case BLUE:
@@ -707,6 +859,13 @@ void moveCounter( Player* player, int counterSerial )
             else
             {
                 *targetMarker+=moves;
+            }
+        }
+        else if( *targetMarker>=85 && *targetMarker<89 )
+        {
+            if( dicesRoll==6 )
+            {
+                *targetMarker = 27;
             }
         }
         break;
@@ -744,28 +903,118 @@ void moveCounter( Player* player, int counterSerial )
                 *targetMarker+=moves;
             }
         }
+        else if( *targetMarker>=89 && *targetMarker<=92 )
+        {
+            if( dicesRoll==6 )
+            {
+                *targetMarker = 40;
+            }
+        }
         break;
     }
 
     eatCounter( *targetMarker, player );
 }
 
-void moveCounterFromHomeToPlay( Player* player, int location )
+void gotoNextPlayer()
 {
-    int color = player->color;
-    int counterToBeMoved, i, target;
-    for( i=0; i<4; i++ )
+    presentPlayer=(presentPlayer+1)%4;
+}
+
+Point getPointOfClick()
+{
+    Point output;
+    while( !ismouseclick(WM_LBUTTONDOWN) );
+    //drawLudoBoard();
+    getmouseclick( WM_LBUTTONDOWN, output.x, output.y );
+    clearmouseclick( WM_LBUTTONDOWN );
+    printf("%d--%d\n", output.x, output.y);
+    return output;
+}
+
+int getLocationWhereClickHasBeenMade( Point pointOfClick )
+{
+    int i;
+    Point analyzing;
+    //printf("%d-----%d\n", pointOfClick.x, pointOfClick.y);
+
+    for( i=1; i<=92; i++ )
     {
-        if( player->markers[i]==location )
+        analyzing = getPointOfLocation(i);
+        if( pointOfClick.x-analyzing.x<=35 && pointOfClick.x-analyzing.x>=0
+                && pointOfClick.y-analyzing.y<=35 && pointOfClick.y-analyzing.y>=0 )
         {
-            counterToBeMoved = i;
-            break;
+            //printf("%d--%d\n", analyzing.x, analyzing.y);
+            return i;
         }
     }
-    if( color==GREEN ) target=1;
-    else if( color==RED ) target=14;
-    else if( color==BLUE ) target=27;
-    else if( color==YELLOW ) target=40;
-
-    player->markers[counterToBeMoved] = target;
+    return -1;
 }
+
+int getIndexOfPlayerWhoseDiceIsClicked( Point pointOfClick )
+{
+    int i;
+    Point analyzing;
+
+    for( i=0; i<4; i++ )
+    {
+        analyzing = getLocationOfPlayersDie(&players[i]);
+        if( pointOfClick.x-analyzing.x<=50 && pointOfClick.x-analyzing.x>=0
+                && pointOfClick.y-analyzing.y<=50 && pointOfClick.y-analyzing.y>=0 )
+        {
+            printf("We got %d\n", i);
+            return i;
+        }
+    }
+    return -1;
+}
+
+bool isDicePressed(Point user_click)
+{
+    if(user_click.x-1020>=0 && user_click.y-220>=0 && user_click.x-1020<=210 && user_click.y-220<=210)
+        return true;
+    else
+        return false;
+}
+
+bool thereIsACounterOfPlayerInThatLocation(Player* player, int location, int* output )
+{
+    int i;
+    for( i=0; i<4; i++ )
+    {
+        if( player->markers[i] == location )
+        {
+            *output = i;
+            return true;
+        }
+    }
+    return false;
+}
+
+bool isWin()
+{
+    int i, j, k=0;
+    for( i=0; i<4; i++ )
+    {
+        if( players[i].countersAtEnd==4 )
+        {
+            k++;
+            if(players[i].rank_check)
+            {
+                players[i].rank_check=false;
+                players[i].ranking=presentRanking;
+                presentRanking++;
+            }
+        }
+    }
+    if( k>=3 )
+    {
+        return true;
+    }
+    else
+    {
+        return false;
+    }
+}
+
+
