@@ -298,22 +298,22 @@ bool canMoveAParticularCounter( Player* player, int dicesValue, int serialOfCoun
     }
     if( color==GREEN )
     {
-        if( analysis>=53 && analysis<58 && analysis+presentPlayersDie>=58 )
+        if( (analysis>=53 && analysis<58 && analysis+presentPlayersDie>=58) || locations==73 )
             return false;
     }
     else if( color==RED )
     {
-        if( analysis>=58 && analysis<63 && analysis+presentPlayersDie>=63 )
+        if( (analysis>=58 && analysis<63 && analysis+presentPlayersDie>=63) || locations==74 )
             return false;
     }
     else if( color==BLUE )
     {
-        if( analysis>=63 && analysis<68 && analysis+presentPlayersDie>=68 )
+        if( (analysis>=63 && analysis<68 && analysis+presentPlayersDie>=68) || locations==75 )
             return false;
     }
     else if( color==YELLOW )
     {
-        if( analysis>=68 && analysis<73 && analysis+presentPlayersDie>=73 )
+        if( (analysis>=68 && analysis<73 && analysis+presentPlayersDie>=73) || locations==76 )
             return false;
     }
 
@@ -364,7 +364,7 @@ void drawAllTextBoxes()
 
 void drawTextBoxes( Player* player )
 {
-    setcolor( WHITE );
+    setcolor( player->color );
     settextstyle(COMPLEX_FONT, HORIZ_DIR, 6 );
     outtextxy( 1020, 85, player->name );
 }
